@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hjemme-Hub - Madplanlægning</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">Hjemme-Hub</h1>
+                <nav class="nav">
+                    <button class="nav-btn active" data-view="meal-plan">Madplan</button>
+                    <button class="nav-btn" data-view="recipes">Opskrifter</button>
+                    <button class="nav-btn" data-view="ingredients">Ingredienser</button>
+                    <button class="nav-btn" data-view="shopping">Indkøbsliste</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Meal Plan View -->
+            <div id="meal-plan-view" class="view active">
+                <div class="view-header">
+                    <h2>Ugens Madplan</h2>
+                    <button class="btn-primary" id="add-meal-btn">+ Tilføj Måltid</button>
+                </div>
+                <div id="meal-plan-grid" class="meal-grid"></div>
+            </div>
+
+            <!-- Recipe Management View -->
+            <div id="recipes-view" class="view">
+                <div class="view-header">
+                    <h2>Opskrifter</h2>
+                    <button class="btn-primary" id="add-recipe-btn">+ Ny Opskrift</button>
+                </div>
+                <div id="recipes-grid" class="cards-grid"></div>
+            </div>
+
+            <!-- Ingredient Management View -->
+            <div id="ingredients-view" class="view">
+                <div class="view-header">
+                    <h2>Ingredienser</h2>
+                    <button class="btn-primary" id="add-ingredient-btn">+ Ny Ingrediens</button>
+                </div>
+                <div id="ingredients-grid" class="cards-grid"></div>
+            </div>
+
+            <!-- Shopping List View -->
+            <div id="shopping-view" class="view">
+                <div class="view-header">
+                    <h2>Indkøbsliste</h2>
+                </div>
+                <div id="shopping-list" class="shopping-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script type="module" src="main.js"></script> 
+</body>
+</html>

@@ -237,7 +237,7 @@ body {
 /* Cards Grid */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -248,6 +248,8 @@ body {
   box-shadow: var(--shadow-sm);
   transition: all 0.2s;
   border: 1px solid var(--color-border);
+  width: 100%; /* Sørg for at kortet fylder sin grid-celle */
+  box-sizing: border-box; /* Vigtigt: Padding og border tæller med i bredden */
 }
 
 .card:hover {
@@ -276,7 +278,7 @@ body {
 .card-content {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
-  gap: var(--spacing-xs);
+  padding-top: var(--spacing-sm);
 }
 
 /* Shopping List */
@@ -826,6 +828,7 @@ body {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--spacing-sm);
+    width: 100%;
 }
 
 @media (min-width: 768px) {
@@ -836,10 +839,25 @@ body {
 
 .flex-item-between {
     display: flex;
-    justify-content: space-between;
+    /* justify-content: space-between; <-- Fjerner denne, da vi vil have teksten til at fylde */
     align-items: center;
     padding: var(--spacing-sm);
     background-color: var(--color-background);
     border-radius: var(--radius);
     border: 1px solid var(--color-border);
+    flex-wrap: wrap; /* Tillader elementerne at pakke sig til en ny linje */
+    margin-bottom: var(--spacing-xs); /* Lidt mellemrum mellem ingredienslinjer */
+}
+
+/* Giver navnet mulighed for at strække sig, men ikke til det yderste */
+.flex-item-between span {
+    flex-grow: 1; /* Lad teksten vokse og tage al tilgængelig plads */
+    margin-right: var(--spacing-sm); /* Afstand til knapperne */
+    word-break: break-word; /* Hvis navnet er meget langt, så bryd ordet */
+}
+
+.flex-item-between .card-actions {
+    flex-shrink: 0; /* Knapperne skal ikke krympe */
+    display: flex; /* Gør card-actions til en flex container for knapper */
+    gap: var(--spacing-xs); /* Afstand mellem rediger og slet knap */
 }

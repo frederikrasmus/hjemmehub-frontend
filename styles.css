@@ -237,7 +237,7 @@ body {
 /* Cards Grid */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
   gap: var(--spacing-md);
 }
 
@@ -282,51 +282,68 @@ body {
 }
 
 /* Shopping List */
-.shopping-list {
-  background-color: var(--color-surface);
-  border-radius: var(--radius);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.shopping-category {
-  margin-bottom: var(--spacing-lg);
-}
-
-.shopping-category h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  margin-bottom: var(--spacing-sm);
-  padding-bottom: var(--spacing-xs);
-  border-bottom: 2px solid var(--color-border);
-}
+/* Styling for Indkøbsliste: JUSTERINGER */
 
 .shopping-item {
-  display: flex;
-  align-items: center;
-  padding: var(--spacing-sm);
-  border-bottom: 1px solid var(--color-border);
+    display: flex; /* Gør shopping-item til en flex container */
+    align-items: center; /* Centrerer elementer vertikalt */
+    padding: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+    gap: var(--spacing-xs); /* Afstand mellem flex-items */
 }
 
-.shopping-item:last-child {
-  border-bottom: none;
+/* Ingrediensnavn - nu en separat label for bedre semantik */
+.shopping-item-text-name {
+    flex-grow: 1; /* Lad navnet fylde det meste af den tilgængelige plads */
+    font-size: 1rem;
+    color: var(--color-text);
+    /* margin-right: var(--spacing-sm); Fjern denne, da 'gap' håndterer det nu */
+    display: flex; /* Nødvendig, hvis du vil aligne teksten med checkbox, ellers flex-item */
+    align-items: center;
 }
 
+/* Checkbox (original, men for klarhed) */
 .shopping-item input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  margin-right: var(--spacing-sm);
+  /* margin-right: var(--spacing-sm); Fjernet pga. 'gap' på .shopping-item */
   cursor: pointer;
 }
 
-.shopping-item-text {
-  flex: 1;
-  font-size: 1rem;
-  color: var(--color-text);
+/* Mængde input-felt */
+.shopping-item-quantity {
+    width: 60px; /* Fast bredde til tal */
+    padding: var(--spacing-xs);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    text-align: right; /* Tal til højre */
+    flex-shrink: 0; /* Forhindrer feltet i at krympe */
+    /* margin-left: var(--spacing-sm); margin-right: var(--spacing-xs); Fjernet pga. 'gap' */
 }
 
-.shopping-item-text.checked {
+.shopping-item-quantity:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+}
+
+/* Enhed */
+.shopping-item-unit {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    flex-shrink: 0; /* Forhindrer enheden i at krympe */
+    /* margin-right: var(--spacing-sm); Fjernet pga. 'gap' */
+}
+
+/* Slet knap (original, men for klarhed) */
+.shopping-item .btn-danger {
+    flex-shrink: 0; /* Slet-knap skal ikke krympe */
+    /* margin-left: var(--spacing-sm); Fjernet pga. 'gap' */
+}
+
+/* Justering for tekst, der er "checked" (genbrug fra eksisterende) */
+.shopping-item-text-name.checked {
   text-decoration: line-through;
   color: var(--color-text-secondary);
 }
@@ -676,6 +693,8 @@ body {
   display: flex; /* Gør måltidskortet flex for at placere ikoner */
   justify-content: space-between; /* Juster indhold og ikoner */
   align-items: center;
+  position: relative; /* Nødvendig for absolut positionering af slet-knap */
+  padding-right: var(--spacing-xl); /* Giver plads til knappen i højre hjørne */
 }
 
 .meal-card:hover {
@@ -693,6 +712,44 @@ body {
 
 .meal-card p { /* Skjult måltidstype */
     display: none;
+}
+
+.meal-card-actions {
+  position: absolute; /* Positioner den absolut i forhold til .meal-card */
+  top: var(--spacing-xs); /* Lidt afstand fra top */
+  right: var(--spacing-xs); /* Lidt afstand fra højre */
+  /* Fjern display: flex; gap: var(--spacing-xs); hvis der kun er én knap */
+}
+
+/* Tilpas den røde slet-knap til at være et kryds-ikon */
+.meal-card-actions .btn-danger {
+  padding: 0; /* Fjern padding for at lade ikonet fylde knappen */
+  width: 24px; /* Mindre knap */
+  height: 24px; /* Mindre knap */
+  border-radius: 50%; /* Rund knap */
+  background-color: var(--color-danger);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem; /* Større kryds */
+  line-height: 1; /* For at centrere krydset bedre */
+  box-shadow: var(--shadow-sm); /* Lidt skygge */
+  opacity: 0; /* Start skjult */
+  visibility: hidden; /* Skjul indtil hover */
+  transform: scale(0.8); /* Start lidt mindre */
+  transition: all 0.2s ease-in-out;
+}
+
+.meal-card:hover .meal-card-actions .btn-danger {
+  opacity: 1; /* Vis ved hover på .meal-card */
+  visibility: visible;
+  transform: scale(1); /* Voks til normal størrelse */
+}
+
+.meal-card-actions .btn-danger::before {
+  content: '✕'; /* Kryds-ikon */
+  font-weight: bold;
 }
 
 /* --- Ny: Tilføj Måltid Knap ved hver måltidstype --- */
@@ -839,7 +896,6 @@ body {
 
 .flex-item-between {
     display: flex;
-    /* justify-content: space-between; <-- Fjerner denne, da vi vil have teksten til at fylde */
     align-items: center;
     padding: var(--spacing-sm);
     background-color: var(--color-background);
@@ -849,10 +905,9 @@ body {
     margin-bottom: var(--spacing-xs); /* Lidt mellemrum mellem ingredienslinjer */
 }
 
-/* Giver navnet mulighed for at strække sig, men ikke til det yderste */
 .flex-item-between span {
     flex-grow: 1; /* Lad teksten vokse og tage al tilgængelig plads */
-    margin-right: var(--spacing-sm); /* Afstand til knapperne */
+    margin-right: 30px; /* Afstand til knapperne */
     word-break: break-word; /* Hvis navnet er meget langt, så bryd ordet */
 }
 

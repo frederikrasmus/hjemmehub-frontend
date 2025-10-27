@@ -30,35 +30,37 @@ function renderIngredients(ingredients) {
   }
 
   // Group by unit
+  // --- NY LOGIK: Grupper efter IngredientType (kategori) ---
   const groupedIngredients = ingredients.reduce(
     (acc, ingredient) => {
-      if (!acc[ingredient.unit]) {
-        acc[ingredient.unit] = [];
+      const category = ingredient.ingredientType || "ANDRE"; // Default til "ANDRE" hvis type mangler
+      if (!acc[category]) {
+        acc[category] = [];
       }
-      acc[ingredient.unit].push(ingredient);
+      acc[category].push(ingredient);
       return acc;
     },
     {}
   );
 
   grid.innerHTML = Object.entries(groupedIngredients)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => a.localeCompare(b)) // Sorter kategorierne alfabetisk
     .map(
-      ([unit, items]) => `
+      ([category, items]) => `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">${unit}</h3>
+                <h3 class="card-title">${category.replace(/_/g, ' ')}</h3>
                 <div class="card-actions">
                     <!-- Ingen generel tilføj/rediger/slet for hele kategorien her -->
                 </div>
             </div>
             <div class="card-content">
-                <div class="grid-col-2"> <!-- Simpel grid for ingrediensliste -->
+                <div class="grid-col-2">
                   ${items
                     .map(
                       (ingredient) => `
                       <div class="flex-item-between">
-                        <span>${ingredient.name}</span>
+                        <span>${ingredient.name} (${ingredient.unit})</span>
                         <div class="card-actions">
                             <button class="btn-secondary" onclick="window.editIngredient(${ingredient.id})">Rediger</button>
                             <button class="btn-danger" onclick="window.deleteIngredient(${ingredient.id})">Slet</button>
@@ -80,8 +82,15 @@ export function initIngredientsView() {
   document.getElementById("add-ingredient-btn").addEventListener("click", () => window.showAddIngredientForm());
 }
 
+ // Definer de samme enums som i din Java IngredientType for at matche i frontend
+ const INGREDIENT_TYPES = [
+  "GRØNSAG", "KØD", "SNACK", "FRUGT", "KORN", "FISK", "MEJERI", "ÆG",
+  "BÆLGFRUGT", "NØDDER", "FEDTSTOF", "KRYDDERI", "SMAGSGIVERE", "DÅSER",
+  "DRIKKEVARER", "FROSTVARE", "KRYDDERURTER", "FÆRDIGRET", "BAGVÆRK", "ANDRE"
+ ];
+
 window.showAddIngredientForm = (ingredient = null) => {
-  const UNITS = [ "stk", "gram", "ml", "spsk", "tsk", "pakke", "glas", "dåse", "flaske", "bundt", "fed", "andre"]; // Skal matche den globale liste
+    const UNITS = [ "stk", "gram", "ml", "dl", "spsk", "tsk", "pakke", "glas", "dåse", "flaske", "bundt", "fed", "andre"]; // Opdateret liste
 
   const content = `
         <form id="ingredient-form">
@@ -94,6 +103,13 @@ window.showAddIngredientForm = (ingredient = null) => {
                 <select id="ingredient-unit" required>
                     ${UNITS.map((unit) => `<option value="${unit}" ${ingredient?.unit === unit ? "selected" : ""}>${unit}</option>`).join("")}
                 </select>
+                  <div class="form-group">
+                <label for="ingredient-type">Kategori</label>
+                <select id="ingredient-type" required>
+                    <option value="">Vælg Kategori</option>
+                    ${INGREDIENT_TYPES.map((type) => `<option value="${type}" ${ingredient?.ingredientType === type ? "selected" : ""}>${type.replace(/_/g, ' ')}</option>`).join("")}
+                </select>
+            </div>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn-secondary" onclick="window.closeModal()">Annuller</button>
@@ -109,6 +125,7 @@ window.showAddIngredientForm = (ingredient = null) => {
     const data = {
       name: document.getElementById("ingredient-name").value,
       unit: document.getElementById("ingredient-unit").value,
+      ingredientType: document.getElementById("ingredient-type").value, 
     };
 
     try {

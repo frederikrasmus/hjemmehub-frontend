@@ -106,10 +106,9 @@ function renderMealPlan(mealPlans) {
                             </h5>
                             ${mealsGroupedByType[mealType].length > 0 ?
                                 mealsGroupedByType[mealType].map(meal => `
-                                    <div class="meal-card">
+                                    <div class="meal-card" onclick="window.viewMealDetails(${meal.id})">
                                         <h4>${meal.description || "Ingen beskrivelse"}</h4>
                                         <div class="meal-card-actions">
-                                            <button class="btn-secondary btn-small" onclick="event.stopPropagation(); window.showEditMealForm(${meal.id})" aria-label="Rediger måltid"></button>
                                             <button class="btn-danger btn-small" onclick="event.stopPropagation(); window.deleteMeal(${meal.id})" aria-label="Slet måltid"></button>
                                         </div>
                                     </div>
@@ -240,7 +239,6 @@ window.viewMealDetails = async (mealId) => {
                 ` : '<p>Ingen ingredienser til dette måltid.</p>'}
             </div>
             <div class="form-actions">
-                <button class="btn-secondary" onclick="window.showEditMealForm(${meal.id})">Rediger Måltid</button>
                 <button class="btn-danger" onclick="window.deleteMeal(${meal.id})">Slet Måltid</button>
                 <button class="btn-secondary" onclick="window.closeModal()">Luk</button>
             </div>

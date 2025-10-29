@@ -157,49 +157,75 @@ window.showAddMealForm = (dateString, mealTypeSelected) => {
         <form id="add-meal-form">
             <input type="hidden" id="meal-date" value="${dateString}">
             <p style="margin-bottom: var(--spacing-sm); color: var(--color-text-secondary);">
-                Tilføjer ${mealTypeSelected.replace(
+                Tilføj ${mealTypeSelected.replace(
                   /_/g,
                   " "
                 )} til dato: ${new Date(dateString).toLocaleDateString("da-DK")}
             </p>
-            <div class="form-group">
-                <label for="recipe-select">Vælg en opskrift</label>
-                <select id="recipe-select" required>
-                    <option value="">Vælg...</option>
-                    ${filteredRecipes
-                      .map(
-                        (r) => `<option value="${r.id}">${r.description}</option>`
-                      )
-                      .join("")}
-                </select>
-                ${
-                  filteredRecipes.length === 0
-                    ? '<p style="color:var(--color-danger); margin-top: 5px;">Ingen opskrifter af denne type fundet.</p>'
-                    : ""
-                }
+
+             <div id="recipe-selection-grid" class="recipe-modal-grid">
+              ${filteredRecipes.length > 0
+                  ? filteredRecipes
+                      .map(recipe => `
+                          <div class="recipe-selection-card" data-recipe-id="${recipe.id}">
+                              <img src="${recipe.imageUrl || 'https://picsum.photos/id/1018/150'}" alt="${recipe.description}" class="recipe-selection-image">
+                              <h4 class="recipe-selection-title">${recipe.description}</h4>
+                              <p class="recipe-selection-mealtype">${recipe.mealType.replace(/_/g, ' ')}</p>
+                          </div>
+                      `)
+                      .join("")
+                  : `<p class="empty-state" style="margin-top: 1rem;">Ingen opskrifter af typen '${mealTypeSelected.replace(/_/g, ' ')}' fundet. <br/> Opret en ny under "Opskrifter".</p>`
+              }
+          </div>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn-secondary" onclick="window.closeModal()">Annuller</button>
-                <button type="submit" class="btn-primary" ${
-                  filteredRecipes.length === 0 ? "disabled" : ""
-                }>Tilføj</button>
+                <button type="submit" class="btn-primary" id="add-meal-submit-btn" disabled>Tilføj valgt ret</button>
             </div>
         </form>
     `;
 
   openModal("Vælg opskrift", content);
 
+  // ====================== NY LOGIK TIL AT VÆLGE KORT ======================
+  const recipeSelectionGrid = document.getElementById("recipe-selection-grid");
+  const addMealSubmitBtn = document.getElementById("add-meal-submit-btn");
+  let selectedRecipeId = null; // Hold styr på den valgte opskrift lokalt
+
+  recipeSelectionGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.recipe-selection-card');
+      if (card) {
+          // Fjern 'selected' fra alle andre kort
+          document.querySelectorAll('.recipe-selection-card').forEach(item => {
+              item.classList.remove('selected');
+          });
+          // Tilføj 'selected' til det klikkede kort
+          card.classList.add('selected');
+          selectedRecipeId = card.dataset.recipeId;
+          addMealSubmitBtn.disabled = false; // Aktiver "Tilføj"-knappen
+      }
+  });
+
+  // Hvis der kun er én opskrift, vælg den automatisk
+  if (filteredRecipes.length === 1) {
+      const singleCard = document.querySelector('.recipe-selection-card');
+      if (singleCard) {
+          singleCard.classList.add('selected');
+          selectedRecipeId = singleCard.dataset.recipeId;
+          addMealSubmitBtn.disabled = false;
+      }
+  }
+
+
   document
     .getElementById("add-meal-form")
     .addEventListener("submit", async (e) => {
       e.preventDefault();
-      const recipeId = document.getElementById("recipe-select").value;
-
-      if (!recipeId) {
-        return; // Stopper stille, hvis intet er valgt
+      if (!selectedRecipeId) { // Brug den lokalt valgte ID
+        alert("Vælg venligst en opskrift.");
+        return;
       }
-
-      const selectedRecipe = state.recipes.find((r) => r.id == recipeId);
+      const selectedRecipe = state.recipes.find((r) => r.id == selectedRecipeId);
       const mealData = {
         date: dateString,
         mealType: mealTypeSelected,

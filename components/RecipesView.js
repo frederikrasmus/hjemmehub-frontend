@@ -21,7 +21,7 @@ export async function loadRecipesData() {
     }
 }
 
-function renderRecipes(recipes) { // omdøbt parameter til 'recipes' for klarhed
+function renderRecipes(recipes) {
     const grid = document.getElementById("recipes-grid");
 
     if (recipes.length === 0) {
@@ -32,25 +32,28 @@ function renderRecipes(recipes) { // omdøbt parameter til 'recipes' for klarhed
 
     grid.innerHTML = recipes
         .map(recipe => `
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">${recipe.description}</h3>
-                    <div class="card-actions">
-                        <button class="btn-secondary btn-small" onclick="window.editRecipe(${recipe.id})"></button>
-                        <button class="btn-danger btn-small" onclick="window.deleteRecipe(${recipe.id})"></button>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <p><strong>Måltidstype:</strong> ${recipe.mealType.replace(/_/g, ' ')}</p>
-                    ${recipe.ingredients && recipe.ingredients.length > 0 ? `
-                      <p><strong>Ingredienser:</strong></p>
-                      <ul>
-                          ${recipe.ingredients.map(mi => `<li>${mi.ingredient.name} - ${mi.quantity} ${mi.ingredient.unit}</li>`).join('')}
-                      </ul>
-                    ` : '<p>Ingen ingredienser.</p>'}
-                </div>
-            </div>
-        `)
+          <div class="card">
+              <img src="${recipe.imageUrl || 'https://placehold.co/600x400'}" alt="${recipe.description}" class="recipe-card-image">
+              
+              <div class="card-header">
+                  <h3 class="card-title">${recipe.description}</h3>
+                  <div class="card-actions">
+                      <button class="btn-secondary btn-small" onclick="window.editRecipe(${recipe.id})"></button>
+                      <button class="btn-danger btn-small" onclick="window.deleteRecipe(${recipe.id})"></button>
+                  </div>
+              </div>
+
+              <div class="card-content">
+                  <p><strong>Måltidstype:</strong> ${recipe.mealType.replace(/_/g, ' ')}</p>
+                  ${recipe.ingredients && recipe.ingredients.length > 0 ? `
+                    <p><strong>Ingredienser:</strong></p>
+                    <ul>
+                        ${recipe.ingredients.map(mi => `<li>${mi.ingredient.name} - ${mi.quantity} ${mi.ingredient.unit}</li>`).join('')}
+                    </ul>
+                  ` : '<p>Ingen ingredienser.</p>'}
+              </div>
+          </div>
+      `)
         .join('');
     
     // Tilføj CSS for ikoner i RecipesView (Rediger/Slet knapper)
@@ -86,6 +89,11 @@ window.showAddRecipeForm = (recipe = null) => {
   const content = `
       <form id="recipe-form">
           <input type="hidden" id="recipe-id" value="${recipe?.id || ''}">
+          <div class="form-group">
+            <label>Billede</label>
+            <img id="image-preview" src="${recipe?.imageUrl || 'https://placehold.co/600x400'}" alt="Preview" style="max-width: 100%; height: auto; margin-bottom: 10px; border-radius: var(--radius);">
+            <input type="file" id="recipe-image-input" accept="image/*">
+        </div>
           <div class="form-group">
               <label for="recipe-type">Måltidstype</label>
               <select id="recipe-type" required>
@@ -124,6 +132,20 @@ window.showAddRecipeForm = (recipe = null) => {
 
   openModal(recipe ? "Rediger Opskrift" : "Ny Opskrift", content);
 
+  const imageInput = document.getElementById('recipe-image-input');
+  const imagePreview = document.getElementById('image-preview');
+
+  imageInput.addEventListener('change', () => {
+      const file = imageInput.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              imagePreview.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+      }
+  });
+
   const ingredientInputsContainer = document.getElementById("ingredient-inputs");
 
   if (recipe && recipe.ingredients) {
@@ -141,62 +163,87 @@ window.showAddRecipeForm = (recipe = null) => {
     );
 
   document
-    .getElementById("recipe-form")
-    .addEventListener("submit", async (e) => {
-      e.preventDefault();
+  .getElementById("recipe-form")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const id = document.getElementById("recipe-id").value;
-      const mealType = document.getElementById("recipe-type").value;
-      const description = document.getElementById("recipe-description").value;
-
-      const mealIngredients = [];
-      document.querySelectorAll(".ingredient-entry").forEach((entryDiv) => {
-        const ingredientId = entryDiv.querySelector(".ingredient-id").value;
-        const ingredientName = entryDiv.querySelector(".ingredient-name").value;
-        const ingredientUnit = entryDiv.querySelector(".ingredient-unit").value;
-        const quantity = parseFloat(
-          entryDiv.querySelector(".ingredient-quantity").value
-        );
-
-        if ((ingredientId || ingredientName) && quantity > 0) {
-          const miRequest = { quantity: quantity };
-          if (ingredientId) {
-            miRequest.ingredientId = parseInt(ingredientId);
-          } else if (ingredientName && ingredientUnit) {
-            miRequest.ingredientName = ingredientName;
-            miRequest.ingredientUnit = ingredientUnit;
-          } else {
-            return; // Håndter fejl
-          }
-          mealIngredients.push(miRequest);
-        }
-      });
-
-      const mealData = {
-        id: id ? parseInt(id) : null,
-        mealType: mealType,
-        description: description,
-        ingredients: mealIngredients,
-      };
+    // =============== Trin 1: Håndter billede-upload (hvis en ny fil er valgt) ===============
+    let imageUrl = recipe?.imageUrl || null; // Start med det eksisterende billede, hvis der er et
+    const imageInput = document.getElementById('recipe-image-input');
+    
+    if (imageInput.files[0]) {
+      const formData = new FormData();
+      formData.append('file', imageInput.files[0]);
 
       try {
-        if (id) {
-          await api.put(`/meal-plans/${id}?isRecipeTemplate=true`, mealData);
-        } else {
-          await api.post(`/meal-plans?isRecipeTemplate=true`, mealData);
-        }
-        window.closeModal();
-        await loadRecipesData();
+        console.log("Uploader billede...");
+        // Kald din api.post med 'true' for at indikere FormData
+        const uploadResponse = await api.post("/upload", formData, true); 
+        imageUrl = uploadResponse.url;
+        console.log("Billede uploadet, URL:", imageUrl);
       } catch (error) {
-        console.error("[Hjemme-Hub] Fejl ved gem/opdater opskrift:", error);
-        alert(
-          "Kunne ikke gemme opskrift. Tjek at backend kører og ingredienser er gyldige."
-        );
+        console.error("Fejl ved billede-upload:", error);
+        alert("Kunne ikke uploade billede. Prøv igen.");
+        return; // Stop processen hvis upload fejler
+      }
+    }
+
+    // =============== Trin 2: Saml resten af data fra formularen ===============
+    const id = document.getElementById("recipe-id").value;
+    const mealType = document.getElementById("recipe-type").value;
+    const description = document.getElementById("recipe-description").value;
+
+    const mealIngredients = [];
+    document.querySelectorAll(".ingredient-entry").forEach((entryDiv) => {
+      const ingredientId = entryDiv.querySelector(".ingredient-id").value;
+      const ingredientName = entryDiv.querySelector(".ingredient-name").value;
+      const ingredientUnit = entryDiv.querySelector(".ingredient-unit").value;
+      const quantity = parseFloat(
+        entryDiv.querySelector(".ingredient-quantity").value
+      );
+
+      if ((ingredientId || ingredientName) && quantity > 0) {
+        const miRequest = { quantity: quantity };
+        if (ingredientId) {
+          miRequest.ingredientId = parseInt(ingredientId);
+        } else if (ingredientName && ingredientUnit) {
+          miRequest.ingredientName = ingredientName;
+          miRequest.ingredientUnit = ingredientUnit;
+        } else {
+          return;
+        }
+        mealIngredients.push(miRequest);
       }
     });
+
+    // Opret det endelige mealData-objekt, der skal sendes til backend
+    const mealData = {
+      id: id ? parseInt(id) : null,
+      mealType: mealType,
+      description: description,
+      ingredients: mealIngredients,
+      imageUrl: imageUrl, // <-- Tilføj den nye eller eksisterende billede-URL
+    };
+
+    // =============== Trin 3: Gem opskriften (med billede-URL) ===============
+    try {
+      if (id) {
+        await api.put(`/meal-plans/${id}?isRecipeTemplate=true`, mealData);
+      } else {
+        await api.post(`/meal-plans?isRecipeTemplate=true`, mealData);
+      }
+      window.closeModal();
+      await loadRecipesData();
+    } catch (error) {
+      console.error("[Hjemme-Hub] Fejl ved gem/opdater opskrift:", error);
+      alert(
+        "Kunne ikke gemme opskrift. Tjek at backend kører og ingredienser er gyldige."
+      );
+    }
+  });
 };
 
-window.editRecipe = async (recipeId) => {
+export async function editRecipe(recipeId) {
     try {
         const recipe = await api.get(`/meal-plans/${recipeId}`);
         window.showAddRecipeForm(recipe);
@@ -205,8 +252,9 @@ window.editRecipe = async (recipeId) => {
         alert("Kunne ikke hente opskrift til redigering.");
     }
 };
+window.editRecipe = editRecipe; 
 
-window.deleteRecipe = async (recipeId) => {
+export async function deleteRecipe(recipeId) {
     if (confirm("Er du sikker på at du vil slette denne opskrift?")) {
         try {
             await api.delete(`/meal-plans/${recipeId}`); // Sletter opskriften
@@ -216,4 +264,5 @@ window.deleteRecipe = async (recipeId) => {
             alert("Kunne ikke slette opskrift.");
         }
     }
-};
+}
+window.deleteRecipe = deleteRecipe; 

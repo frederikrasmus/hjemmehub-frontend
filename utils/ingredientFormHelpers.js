@@ -3,6 +3,8 @@
 import { api } from '../api/index.js'; // Import API-service
 import { state } from '../main.js'; // Import global state for 'ingredients'
 
+let selectedAutocompleteIndex = -1;
+
 // Global hjælpefunktion til at tilføje ingrediens input felter
 // Bruges af både MealPlanView og RecipesView
 export function addIngredientInputField(container, initialMealIngredient = null) {
@@ -38,7 +40,7 @@ export function addIngredientInputField(container, initialMealIngredient = null)
     const autocompleteResultsContainer = div.querySelector(`#autocomplete-results-${uniqueId}`);
 
     let currentSearchTimeout;
-    let selectedAutocompleteIndex = -1;
+    
 
     nameInput.addEventListener('input', async () => {
         const query = nameInput.value.trim();

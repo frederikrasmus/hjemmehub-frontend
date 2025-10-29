@@ -49,7 +49,8 @@ function renderIngredients(ingredients) {
       ([category, items]) => `
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">${category.replace(/_/g, ' ')}</h3>
+                <h3 class="card-title">${category.replace(/_/g, ' ')
+                  .charAt(0).toUpperCase() + category.replace(/_/g, ' ').slice(1).toLowerCase()}</h3>
                 <div class="card-actions">
                     <!-- Ingen generel tilføj/rediger/slet for hele kategorien her -->
                 </div>

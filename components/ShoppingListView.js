@@ -56,19 +56,20 @@ function renderShoppingList(items) {
     return;
   }
 
-  const itemsByUnit = {};
+  const itemsByCategory = {};
   items.forEach((item) => {
-    if (!itemsByUnit[item.unit]) {
-      itemsByUnit[item.unit] = [];
+    const category = item.ingredientType || "ANDRE"; // Bruger ingredientType her
+    if (!itemsByCategory[category]) {
+      itemsByCategory[category] = [];
     }
-    itemsByUnit[item.unit].push(item);
+    itemsByCategory[category].push(item);
   });
 
-  const listHtml = Object.entries(itemsByUnit)
+  const listHtml = Object.entries(itemsByCategory)
     .map(
-      ([unit, categoryItems]) => `
+      ([category, categoryItems]) => `
         <div class="shopping-category">
-            <h3>${unit}</h3> <!-- Grupperet efter enhed -->
+            <h3>${category.replace(/_/g, ' ').charAt(0).toUpperCase() + category.replace(/_/g, ' ').slice(1).toLowerCase()}</h3> <!-- Grupperet efter kategori -->
             ${categoryItems
               .map(
                 (item) => `
@@ -156,7 +157,11 @@ window.copyShoppingListToClipboard = () => {
         listText += `${categoryName}:\n`;
         
         state.shoppingList
-            .filter(item => item.unit === categoryName) // Filtrer for items i den specifikke kategori
+            // Filtrer nu baseret på det format, der vises i UI, altså sammenlign med formateret enum
+            .filter(item => {
+                const itemCategoryFormatted = (item.ingredientType || "ANDRE").replace(/_/g, ' ').charAt(0).toUpperCase() + (item.ingredientType || "ANDRE").replace(/_/g, ' ').slice(1).toLowerCase();
+                return itemCategoryFormatted === categoryName;
+            }) // Filtrer for items i den specifikke kategori
             .forEach(item => {
                 // Inkluder kun varer, der stadig findes i state.shoppingList (hvis de er blevet slettet fra UI)
                 // og kun hvis mængden er > 0

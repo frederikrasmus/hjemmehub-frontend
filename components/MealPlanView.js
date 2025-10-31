@@ -4,6 +4,11 @@ import { api } from '../api/index.js';
 import { openModal, closeModal } from '../utils/modal.js';
 import { state } from '../main.js'; // Global state (recipes, ingredients)
 
+// Globaliseret MEAL_CATEGORIES for genbrug i andre dele af modulet
+const MEAL_CATEGORIES = [
+  "VEGANSK", "VEGETARISK", "MED_KØD", "MED_FISK", "KYLLING", "SUPPE",
+  "SALAT", "PASTA", "ASIATISK", "MEXICANSK", "ITALIENSK", "DANSK", "ANDRE"
+];
 
 let currentWeekStartDate = getStartOfWeek(new Date());
 
@@ -147,7 +152,7 @@ export function initMealPlanView() {
 
 window.showAddMealForm = (dateString, mealTypeSelected) => {
   // Robust filter: Ignorerer store/små bogstaver og håndterer null
-  const filteredRecipes = state.recipes.filter(
+  let recipesForModal = state.recipes.filter(
     (recipe) =>
       recipe.mealType &&
       recipe.mealType.toUpperCase() === mealTypeSelected.toUpperCase()
@@ -163,18 +168,28 @@ window.showAddMealForm = (dateString, mealTypeSelected) => {
                 )} til dato: ${new Date(dateString).toLocaleDateString("da-DK")}
             </p>
 
+            <!-- NYT: Kategori-filter i modalen -->
+           <div class="form-group">
+               <label for="modal-meal-category-filter">Filtrer efter kategori</label>
+               <select id="modal-meal-category-filter" class="form-control">
+                   <option value="">Alle Kategorier</option>
+                   ${MEAL_CATEGORIES.map(category => `<option value="${category}">${category.replace(/_/g, ' ').charAt(0).toUpperCase() + 
+                      category.replace(/_/g, ' ').slice(1).toLowerCase()}</option>`).join('')}
+               </select>
+           </div>
+
              <div id="recipe-selection-grid" class="recipe-modal-grid">
-              ${filteredRecipes.length > 0
-                  ? filteredRecipes
+              ${recipesForModal.length > 0
+                  ? recipesForModal
                       .map(recipe => `
                           <div class="recipe-selection-card" data-recipe-id="${recipe.id}">
                               <img src="${recipe.imageUrl || 'https://picsum.photos/id/1018/150'}" alt="${recipe.description}" class="recipe-selection-image">
                               <h4 class="recipe-selection-title">${recipe.description}</h4>
-                              <p class="recipe-selection-mealtype">${recipe.mealType.replace(/_/g, ' ')}</p>
+                              <p class="recipe-selection-mealtype">${(recipe.mealCategory ? recipe.mealCategory.replace(/_/g, ' ') : "Ingen Kategori").charAt(0).toUpperCase() + (recipe.mealCategory ? recipe.mealCategory.replace(/_/g, ' ').slice(1).toLowerCase() : "ngen Kategori")}</p>
                           </div>
                       `)
                       .join("")
-                  : `<p class="empty-state" style="margin-top: 1rem;">Ingen opskrifter af typen '${mealTypeSelected.replace(/_/g, ' ')}' fundet. <br/> Opret en ny under "Opskrifter".</p>`
+                  : `<p class="empty-state" style="margin-top: 1rem;">Ingen retter af den valgte type og kategori fundet. <br/> Opret en ny under "Retter".</p>`
               }
           </div>
             </div>
@@ -187,27 +202,59 @@ window.showAddMealForm = (dateString, mealTypeSelected) => {
 
   openModal("Vælg opskrift", content);
 
-  // ====================== NY LOGIK TIL AT VÆLGE KORT ======================
+  const modalCategoryFilter = document.getElementById('modal-meal-category-filter');
   const recipeSelectionGrid = document.getElementById("recipe-selection-grid");
   const addMealSubmitBtn = document.getElementById("add-meal-submit-btn");
-  let selectedRecipeId = null; // Hold styr på den valgte opskrift lokalt
+  let selectedRecipeId = null;
+
+  const renderFilteredRecipesGrid = (currentFilteredRecipes) => {
+      recipeSelectionGrid.innerHTML = currentFilteredRecipes.length > 0
+          ? currentFilteredRecipes
+              .map(recipe => `
+                  <div class="recipe-selection-card" data-recipe-id="${recipe.id}">
+                      <img src="${recipe.imageUrl || 'https://picsum.photos/id/1018/150'}" alt="${recipe.description}" class="recipe-selection-image">
+                      <h4 class="recipe-selection-title">${recipe.description}</h4>
+                      <p class="recipe-selection-mealtype">${(recipe.mealCategory ? recipe.mealCategory.replace(/_/g, ' ') : "Ingen Kategori").charAt(0).toUpperCase() + (recipe.mealCategory ? recipe.mealCategory.replace(/_/g, ' ').slice(1).toLowerCase() : "ngen Kategori")}</p>
+                  </div>
+              `)
+              .join("")
+          : `<p class="empty-state" style="margin-top: 1rem;">Ingen opskrifter af typen '${mealTypeSelected.replace(/_/g, ' ')}' og den valgte kategori fundet.</p>`;
+      
+      selectedRecipeId = null;
+      addMealSubmitBtn.disabled = true;
+  };
+
+  modalCategoryFilter.addEventListener('change', () => {
+      const selectedCategory = modalCategoryFilter.value;
+      let tempFilteredRecipes = state.recipes.filter(
+        (recipe) =>
+          recipe.mealType &&
+          recipe.mealType.toUpperCase() === mealTypeSelected.toUpperCase()
+      );
+
+      if (selectedCategory) {
+          tempFilteredRecipes = tempFilteredRecipes.filter(
+              recipe => recipe.mealCategory && recipe.mealCategory.toUpperCase() === selectedCategory.toUpperCase() ||
+                        !recipe.mealCategory && selectedCategory.toUpperCase() === "ANDRE" // Matcher "ANDRE" hvis kategori mangler
+          );
+      }
+      renderFilteredRecipesGrid(tempFilteredRecipes);
+  });
+
 
   recipeSelectionGrid.addEventListener('click', (e) => {
       const card = e.target.closest('.recipe-selection-card');
       if (card) {
-          // Fjern 'selected' fra alle andre kort
           document.querySelectorAll('.recipe-selection-card').forEach(item => {
               item.classList.remove('selected');
           });
-          // Tilføj 'selected' til det klikkede kort
           card.classList.add('selected');
           selectedRecipeId = card.dataset.recipeId;
           addMealSubmitBtn.disabled = false; // Aktiver "Tilføj"-knappen
       }
   });
 
-  // Hvis der kun er én opskrift, vælg den automatisk
-  if (filteredRecipes.length === 1) {
+  if (recipesForModal.length === 1) { // <--- RETTELSE HER: Brug 'recipesForModal'
       const singleCard = document.querySelector('.recipe-selection-card');
       if (singleCard) {
           singleCard.classList.add('selected');
@@ -234,6 +281,7 @@ window.showAddMealForm = (dateString, mealTypeSelected) => {
           ingredientId: mi.ingredient.id,
           quantity: mi.quantity,
         })),
+        mealCategory: selectedRecipe.mealCategory,
       };
 
       try {

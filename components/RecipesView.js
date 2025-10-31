@@ -4,20 +4,27 @@ import { api } from '../api/index.js';
 import { openModal, closeModal } from '../utils/modal.js';
 import { state } from '../main.js'; // Global state (ingredients)
 
+const MEAL_TYPES = ["MORGENMAD", "FROKOST", "AFTENSMAD", "SNACK", "ANDET"];
+
+const MEAL_CATEGORIES_FOR_FORM = [ // Matcher din Java MealCategory Enum
+  "VEGANSK", "VEGETARISK", "MED_KØD", "MED_FISK", "KYLLING", "SUPPE",
+  "SALAT", "PASTA", "ASIATISK", "MEXICANSK", "ITALIENSK", "DANSK", "ANDRE"
+];
+
 // (window.addIngredientInputField er globalt defineret i main.js via utils/ingredientFormHelpers.js)
 
 export async function loadRecipesData() {
     const grid = document.getElementById("recipes-grid");
-    grid.innerHTML = '<div class="loading">Indlæser opskrifter...</div>';
+    grid.innerHTML = '<div class="loading">Indlæser Retter...</div>';
 
     try {
-        const recipes = await api.get("/meal-plans?isRecipeTemplate=true"); // Henter kun opskriftstemplater
+        const recipes = await api.get("/meal-plans?isRecipeTemplate=true"); // Henter kun Retstemplater
         state.recipes = recipes; // Gem i global state, hvis nødvendigt for andre visninger
         renderRecipes(recipes);
     } catch (error) {
-        console.error("[Hjemme-Hub] Fejl ved indlæsning af opskrifter:", error);
+        console.error("[Hjemme-Hub] Fejl ved indlæsning af Retter:", error);
         grid.innerHTML =
-            '<div class="empty-state"><h3>Kunne ikke indlæse opskrifter</h3><p>Tjek at backend kører på localhost:8080</p></div>';
+            '<div class="empty-state"><h3>Kunne ikke indlæse Retter</h3><p>Tjek at backend kører på localhost:8080</p></div>';
     }
 }
 
@@ -26,7 +33,7 @@ function renderRecipes(recipes) {
 
     if (recipes.length === 0) {
         grid.innerHTML =
-            '<div class="empty-state"><h3>Ingen opskrifter endnu</h3><p>Klik på "Ny Opskrift" for at tilføje din første opskrift.</p></div>';
+            '<div class="empty-state"><h3>Ingen Retter endnu</h3><p>Klik på "Ny Ret" for at tilføje din første Ret.</p></div>';
         return;
     }
 
@@ -84,7 +91,7 @@ export function initRecipesView() {
 // --- SLUT OPDATERET ---
 
 window.showAddRecipeForm = (recipe = null) => {
-  const mealTypes = ["MORGENMAD", "FROKOST", "AFTENSMAD", "SNACK", "ANDET"];
+  const mealTypes = MEAL_TYPES;
 
   const content = `
       <form id="recipe-form">
@@ -108,6 +115,16 @@ window.showAddRecipeForm = (recipe = null) => {
               </select>
           </div>
           <div class="form-group">
+              <label for="recipe-category">Ret Kategori</label>
+              <select id="recipe-category" required>
+                  <option value="">Vælg Kategori</option>
+                  ${MEAL_CATEGORIES_FOR_FORM.map(category => `<option value="
+                    ${category}" ${recipe?.mealCategory === category ? "selected" : ""}>
+                    ${category.replace(/_/g, ' ').charAt(0).toUpperCase() 
+                      + category.replace(/_/g, ' ').slice(1).toLowerCase()}</option>`).join('')}
+              </select>
+          </div>
+          <div class="form-group">
               <label for="recipe-description">Beskrivelse</label>
               <input type="text" id="recipe-description" value="${
                 recipe?.description || ""
@@ -124,13 +141,13 @@ window.showAddRecipeForm = (recipe = null) => {
           <div class="form-actions">
               <button type="button" class="btn-secondary" onclick="window.closeModal()">Annuller</button>
               <button type="submit" class="btn-primary">${
-                recipe ? "Opdater Opskrift" : "Tilføj Opskrift"
+                recipe ? "Opdater Ret" : "Tilføj Ret"
               }</button>
           </div>
       </form>
   `;
 
-  openModal(recipe ? "Rediger Opskrift" : "Ny Opskrift", content);
+  openModal(recipe ? "Rediger Ret" : "Ny Ret", content);
 
   const imageInput = document.getElementById('recipe-image-input');
   const imagePreview = document.getElementById('image-preview');
@@ -192,6 +209,7 @@ window.showAddRecipeForm = (recipe = null) => {
     const id = document.getElementById("recipe-id").value;
     const mealType = document.getElementById("recipe-type").value;
     const description = document.getElementById("recipe-description").value;
+    const mealCategory = document.getElementById("recipe-category").value;
 
     const mealIngredients = [];
     document.querySelectorAll(".ingredient-entry").forEach((entryDiv) => {
@@ -223,9 +241,10 @@ window.showAddRecipeForm = (recipe = null) => {
       description: description,
       ingredients: mealIngredients,
       imageUrl: imageUrl, // <-- Tilføj den nye eller eksisterende billede-URL
+      mealCategory: mealCategory,
     };
 
-    // =============== Trin 3: Gem opskriften (med billede-URL) ===============
+    // =============== Trin 3: Gem Reten (med billede-URL) ===============
     try {
       if (id) {
         await api.put(`/meal-plans/${id}?isRecipeTemplate=true`, mealData);
@@ -235,9 +254,9 @@ window.showAddRecipeForm = (recipe = null) => {
       window.closeModal();
       await loadRecipesData();
     } catch (error) {
-      console.error("[Hjemme-Hub] Fejl ved gem/opdater opskrift:", error);
+      console.error("[Hjemme-Hub] Fejl ved gem/opdater Ret:", error);
       alert(
-        "Kunne ikke gemme opskrift. Tjek at backend kører og ingredienser er gyldige."
+        "Kunne ikke gemme Ret. Tjek at backend kører og ingredienser er gyldige."
       );
     }
   });
@@ -248,20 +267,20 @@ export async function editRecipe(recipeId) {
         const recipe = await api.get(`/meal-plans/${recipeId}`);
         window.showAddRecipeForm(recipe);
     } catch (error) {
-        console.error("[Hjemme-Hub] Fejl ved hentning af opskrift til redigering:", error);
-        alert("Kunne ikke hente opskrift til redigering.");
+        console.error("[Hjemme-Hub] Fejl ved hentning af Ret til redigering:", error);
+        alert("Kunne ikke hente Ret til redigering.");
     }
 };
 window.editRecipe = editRecipe; 
 
 export async function deleteRecipe(recipeId) {
-    if (confirm("Er du sikker på at du vil slette denne opskrift?")) {
+    if (confirm("Er du sikker på at du vil slette denne Ret?")) {
         try {
-            await api.delete(`/meal-plans/${recipeId}`); // Sletter opskriften
+            await api.delete(`/meal-plans/${recipeId}`); // Sletter Reten
             await loadRecipesData();
         } catch (error) {
-            console.error("[Hjemme-Hub] Fejl ved sletning af opskrift:", error);
-            alert("Kunne ikke slette opskrift.");
+            console.error("[Hjemme-Hub] Fejl ved sletning af Ret:", error);
+            alert("Kunne ikke slette Ret.");
         }
     }
 }

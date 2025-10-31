@@ -933,6 +933,7 @@ body {
 }
 
 /* Styling for opskrifts-grid i modalen (meal-plan view) */
+/* Styling for opskrifts-grid i modalen (meal-plan view) */
 .recipe-modal-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* 3-4 kort pr. række */
@@ -967,7 +968,7 @@ body {
 .recipe-selection-card.selected {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 2px var(--color-primary);
-    background-color: lighten(var(--color-primary), 40%); /* Lidt lysere farve når valgt */
+    background-color: #fce8e2; /* En lys version af --color-primary */
 }
 
 .recipe-selection-image {
@@ -995,9 +996,4 @@ body {
 
 .recipe-modal-grid .empty-state {
     grid-column: 1 / -1; /* Sørg for at empty-state fylder hele bredden i grid'en */
-}
-
-
-.recipe-selection-card.selected {
-    background-color: #fce8e2; 
 }
